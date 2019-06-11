@@ -46,13 +46,12 @@
     "autoload": {
         "psr-4": {
             "Persistence\\": "src\/Persistence",
-            "Actor\\": "src\/actors"
+            "Actor\\": "src\/Actor"
         },
         "classmap": [
             "persistence\/",
             "io\/",
-            "stages\/",
-            "actors\/"
+            "stage\/"
         ]
     },
     "autoload-dev": {},
