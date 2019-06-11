@@ -1,0 +1,9 @@
+*~
+vendor/
+states/
+nbproject/private
+*.sqlite3
+.DS_Store
+composer.5.json
+composer.lock
+

@@ -1,0 +1,60 @@
+{
+    "name": "primo\/pisara",
+    "type": "library",
+    "description": "Persistence I\/O Stage Actors Roles => Architecture",
+    "keywords": [
+        "pdo",
+        "psr7",
+        "architecture"
+    ],
+    "homepage": "https:\/\/github.com\/keithy\/primo-pisara-php",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Keithy",
+            "email": "keithy@consultant.com",
+            "role": "Developer"
+        }
+    ],
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https:\/\/github.com\/keithy\/primo-pisara-php.git"
+        },
+        {
+            "type": "vcs",
+            "url": "https:\/\/github.com\/keithy\/okay-php.git"
+        },
+        {
+            "type": "vcs",
+            "url": "https:\/\/github.com\/keithy\/dci-php.git"
+        },
+        {
+            "type": "vcs",
+            "url": "https:\/\/github.com\/keithy\/primo-pdo-php.git"
+        }
+    ],
+    "require": {
+        "mbrowne\/dci": "dev-kphmods",
+        "primo\/pdo": "dev-master"
+    },
+    "require-dev": {
+        "robmorgan\/phinx": "^0.10.7",
+        "fzaninotto\/faker": "^1.8",
+        "okay\/okay": "dev-master"
+    },
+    "autoload": {
+        "psr-4": {
+            "Persistence\\": "src\/Persistence",
+            "Actor\\": "src\/actors"
+        },
+        "classmap": [
+            "persistence\/",
+            "io\/",
+            "stages\/",
+            "actors\/"
+        ]
+    },
+    "autoload-dev": {},
+    "scripts": {}
+}
