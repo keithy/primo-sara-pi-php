@@ -8,8 +8,7 @@ namespace IO {
 
     class PSR7_Json extends \DCI\Context
     {
-        public $state;
-        protected $controller;
+        public $controller;
         public $request;
         public $response;
 
@@ -23,10 +22,10 @@ namespace IO {
         // 
         // Our connection to the big wide world, who is asking 
         // Construct
-        function __construct($state, $replyController)
+        function __construct($controller)
         {
-            $this->state = $state;
-            $this->controller = $replyController->entering($this)->addRole('Controller_To_HTTP', $this);
+            $this->state = $controller->state;
+            $this->controller = $controller->entering($this);
         }
 
         function setIO($request, $response)
@@ -34,13 +33,6 @@ namespace IO {
             $this->request = $request;
             $this->response = $response;
             return $this;
-        }
-
-        // ROLES ALLOCATION
-        //requestRole = //teachMeHowTo
-        function teachMeHowTo_readFile_ofType($controller, $type)
-        {
-            return $controller->addRole("ReadFile_$type", $this);
         }
 
         function respondNotFound($info)
@@ -52,10 +44,7 @@ namespace IO {
         function respondInvalidParameter($info)
         {
             $this->controller->statusInvalidParameter();
-
-            $info['type'] = $this->controller->fakeMockRealType;
-            $info['database-config'] = $this->state->dbConfigFile;
-            $info['log'] = $this->log;
+            $this->controller->errorInfo($info);
 
             return $this->respondErrors("Invalid or Missing Parameter", $info);
         }
@@ -64,9 +53,7 @@ namespace IO {
         {
             $this->controller->statusNoData();
 
-            $info['type'] = $this->controller->fakeMockRealType;
-            $info['database-config'] = $this->state->dbConfigFile;
-            $info['log'] = $this->log;
+            $this->controller->errorInfo($info);
 
             return $this->respondErrors("No Data", $info);
         }
@@ -76,11 +63,7 @@ namespace IO {
             $errors = [];
             $info['message'] = $message;
 
-            if ($this->state->configAt('settings')['displayErrorDetails'] ?? false) {
-                // $info['type'] = $this->controller->fakeMockRealType;
-                $info['database-config'] = $this->state->dbConfigFile;
-                // $info['log'] = $this->log;
-            }
+            $this->controller->errorInfo($info);
 
             $errors['errors'] = $info;
 
@@ -103,6 +86,34 @@ namespace IO {
                             ->write(json_encode($data))
                             ->withHeader('Content-Type', 'application/json');
         }
+
+        function getServerRequestHeaderAt($key)
+        {
+            return $this->request->getHeaderLine($key) ?: null;
+        }
+
+        function getResourceQueryParam($key)
+        {
+            return $this->request->getQueryParam($key, null);
+        }
+
+        function getPostedParams()
+        {
+            return $this->request->getParams();
+        }
+
+        function inputEcho()
+        {
+            return ["request_attributes" => $this->request->getAttributes(),
+                "request_params" => $this->request->getParams(),
+                "query_params" => $this->request->getQueryParams()
+            ];
+        }
+
+        function outputEcho()
+        {
+            return [];
+        }
     }
 
 }
@@ -120,10 +131,43 @@ namespace IO {
 
 namespace IO\PSR7_Json\Roles {
 
-
-    trait Controller_To_HTTP
+    trait InputFrom_PSR7
     {
-        
+
+        function inputEcho() // for debugging/echo
+        {
+            return $this->context->inputEcho();
+        }
+
+        function getContext() // for debugging/echo
+        {
+            return $this->context;
+        }
+
+        function getServerRequestHeaderAt($key)
+        {
+            return $this->context->getServerRequestHeaderAt($key);
+        }
+
+        function getResourceQueryParam($key)
+        {
+            return $this->context->getServerRequestHeaderAt($key);
+        }
+
+        function getParams()
+        {
+            return $this->context->getPostedParams();
+        }
+    }
+
+    trait OutputTo_PSR7_JSON
+    {
+
+        function outputEcho() // for debugging/echo
+        {
+            return $this->context->outputEcho();
+        }
+
         function respond($data)
         {
             switch (true) {
