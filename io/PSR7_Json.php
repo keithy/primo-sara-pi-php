@@ -80,6 +80,11 @@ namespace IO {
             $this->response = $this->response->withStatus($code);
         }
 
+        function getResponseStatus($code)
+        {
+            return $this->response->getStatusCode();
+        }
+
         function reply($data)
         {
             return $this->response
@@ -131,7 +136,7 @@ namespace IO {
 
 namespace IO\PSR7_Json\Roles {
 
-    trait InputFrom_PSR7
+    trait Input
     {
 
         function inputEcho() // for debugging/echo
@@ -160,8 +165,9 @@ namespace IO\PSR7_Json\Roles {
         }
     }
 
-    trait OutputTo_PSR7_JSON
+    trait Output
     {
+        protected $ioMessage;
 
         function outputEcho() // for debugging/echo
         {
@@ -173,7 +179,7 @@ namespace IO\PSR7_Json\Roles {
             switch (true) {
                 case (is_array($data));
                     $reply = $data;
-                    $reply['success'] = true;
+                    $reply['success'] = $reply['success'] ?? true;
                 case (true === $data);
                     $reply = ["success" => true];
                     break;
@@ -181,40 +187,53 @@ namespace IO\PSR7_Json\Roles {
                     $reply = ["success" => false];
                     break;
             }
-            if ($this->message) {
-                $reply['message'] = $this->message;
+            if ($this->ioMessage) {
+                $reply['message'] = $this->ioMessage;
             }
+
+            $reply['status'] = $this->context->getResponseStatus();
+
             return $this->context->reply($reply);
         }
-
-        function statusOK($message = null) // the slim default - so probably not needed
+        
+        function setStatus($code) 
         {
-            $this->withMessage($message);
+            $this->context->setResponseStatus($code);
+            return $this;
+        }
+        function statusOK(...$args) // the slim default - so probably not needed
+        {
+            if (!empty($args)) $this->ioMessage = sprintf(...$args);
             $this->context->setResponseStatus(200);
         }
 
-        function statusNoData($message = null)
+        function statusNoData(...$args)
         {
-            $this->withMessage($message);
+            if (!empty($args)) $this->ioMessage = sprintf(...$args);
             $this->context->setResponseStatus(204);
         }
 
-        function statusInvalidParameter($message = null)
+        function statusInvalidParameter(...$args)
         {
-            $this->withMessage($message);
+            if (!empty($args)) $this->ioMessage = sprintf(...$args);
             $this->context->setResponseStatus(400);
         }
 
-        function statusNotFound($message = null)
+        function statusNotFound(...$args)
         {
-            $this->withMessage($message);
+            if (!empty($args)) $this->ioMessage = sprintf(...$args);
             $this->context->setResponseStatus(404);
         }
 
-        function statusInvalidFile($message = null)
+        function statusInvalidFile(...$args)
         {
-            $this->withMessage($message);
+            if (!empty($args)) $this->ioMessage = sprintf(...$args);
             $this->context->setResponseStatus(404);
+        }
+
+        function isStatusOK( $expected = 200)  
+        {
+            return ($expected === $this->context->getResponseStatus());
         }
     }
 

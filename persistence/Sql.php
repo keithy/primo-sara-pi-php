@@ -155,15 +155,15 @@ namespace Persistence {
 
             $is = "`" . $key . "` IS '" . $dict[$key] . "'";
 
-            $update =  array_diff_assoc($dict , $prevDict );
-            
+            $update = array_diff_assoc($dict, $prevDict);
+
             if ($update[$key] ?? false) unset($update[$key]);
 
             $into = "`" . implode('` = ?, `', array_keys($update)) . '` = ?';
             $values = str_repeat('?,', count($update) - 1);
 
             $this->pdo->run("UPDATE `{$table}` SET {$into} WHERE {$is}", array_values($update));
-            
+
             return true;
         }
 
@@ -182,14 +182,14 @@ namespace Persistence {
         {
             $table = $this->tableFor($modelClass);
 
-            return $this->infoCache->dbInfoAt("{$table}_columns",
+            return $this->infoCache->at("{$table}_columns",
                             function( $k ) use ($table) {
                         return $this->pdo->columnsOfTable($table);
                     });
         }
 
         // fallback when no infoCache provider is supplied
-        function dbInfoAt($k, $fnOrVal = null)
+        function at($k, $fnOrVal = null)
         {
             static $cache = [];
             if (isset($cache[$k])) return $cache[$k];
@@ -216,7 +216,6 @@ namespace Persistence {
     }
 
 }
-
 /**
  * Roles are defined in a sub-namespace of the context as a workaround for the fact that
  * PHP doesn't support inner classes.
@@ -299,16 +298,16 @@ namespace Persistence\Sql\Roles {
     trait Model_Persisted
     {
         protected $remembered;
-        
+
         function remember()
         {
             $this->remembered = $this->toArray();
         }
-        
+
         function update()
         {
             $update = $this->toArray();
-            
+
             return $this->context->dbUpdate($this->modelClass(), $update, $this->remembered);
         }
 
@@ -327,4 +326,3 @@ namespace Persistence\Sql\Roles {
     }
 
 }
-    
