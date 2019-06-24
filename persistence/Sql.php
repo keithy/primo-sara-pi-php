@@ -116,7 +116,7 @@ namespace Persistence {
         {
             $table = $this->tableFor($modelClass);
 
-            $fields = $fields ?? $this->fields;
+            $fields ?? $fields = $this->fields;
 
             $is = "(`" . implode('` IS ?) OR (`', array_keys($dict)) . '` IS ?)';
 
@@ -160,7 +160,7 @@ namespace Persistence {
             if ($update[$key] ?? false) unset($update[$key]);
 
             $into = "`" . implode('` = ?, `', array_keys($update)) . '` = ?';
-            $values = str_repeat('?,', count($update) - 1);
+            //$values = str_repeat('?,', count($update) - 1);
 
             $this->pdo->run("UPDATE `{$table}` SET {$into} WHERE {$is}", array_values($update));
 
@@ -183,7 +183,7 @@ namespace Persistence {
             $table = $this->tableFor($modelClass);
 
             return $this->infoCache->at("{$table}_columns",
-                            function( $k ) use ($table) {
+                            function( ) use ($table) {
                         return $this->pdo->columnsOfTable($table);
                     });
         }
@@ -313,6 +313,7 @@ namespace Persistence\Sql\Roles {
 
         function delete()
         {
+            $model = $this->getDataObject();
             $key = $this->context->primaryKeyFor($this->modelClass());
             $lookup = [$key => $model[$key]];
 
