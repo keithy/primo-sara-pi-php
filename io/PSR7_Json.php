@@ -8,6 +8,49 @@ namespace IO {
 
     class PSR7_Json extends \DCI\Context
     {
+        const codes = [
+            'ok' => 200,
+            'created' => 201,
+            'accepted' => 202,
+            'no content' => 204,
+            'reset content' => 205,
+            'moved permanently' => 301,
+            'found' => 302,
+            'see other' => 303,
+            'not modified' => 304,
+            'temporary redirect' => 307,
+            'permanent redirect' => 308,
+            'bad request' => 400,
+            'unauthorized' => 401,
+            'payment required' => 402,
+            'forbidden' => 403,
+            'not found' => 404,
+            'method not allowed' => 405,
+            'not acceptable' => 406,
+            'request timeout' => 408,
+            'conflict' => 409,
+            'gone' => 410,
+            'precondition failed' => 412,
+            'payload too large' => 413,
+            'unsupported media type' => 415,
+            "i'm a teapot" => 418,
+            'page expired' => 419,
+            'enhance your calm' => 420,
+            'unprocessable entity' => 422,
+            'locked' => 423,
+            'upgrade required' => 426,
+            'too many requests' => 429,
+            'call the lawyers' => 451,
+            'invalid token' => 498,
+            'token required' => 499,
+            'internal server error' => 500,
+            'error' => 500,
+            'not implemented' => 501,
+            'bad gateway' => 502,
+            'service unavailable' => 503,
+            'gateway timeout' => 504
+        ];
+
         public $controller;
         public $request;
         public $response;
@@ -80,7 +123,7 @@ namespace IO {
             $this->response = $this->response->withStatus($code);
         }
 
-        function getResponseStatus($code)
+        function getResponseStatus()
         {
             return $this->response->getStatusCode();
         }
@@ -179,7 +222,7 @@ namespace IO\PSR7_Json\Roles {
             switch (true) {
                 case (is_array($data));
                     $reply = $data;
-                    $reply['success'] = $reply['success'] ?? true;
+                    $reply['success'] ?? $reply['success'] = true;
                 case (true === $data);
                     $reply = ["success" => true];
                     break;
@@ -195,12 +238,13 @@ namespace IO\PSR7_Json\Roles {
 
             return $this->context->reply($reply);
         }
-        
-        function setStatus($code) 
+
+        function setStatus($code)
         {
             $this->context->setResponseStatus($code);
             return $this;
         }
+
         function statusOK(...$args) // the slim default - so probably not needed
         {
             if (!empty($args)) $this->ioMessage = sprintf(...$args);
@@ -231,7 +275,7 @@ namespace IO\PSR7_Json\Roles {
             $this->context->setResponseStatus(404);
         }
 
-        function isStatusOK( $expected = 200)  
+        function isStatusOK($expected = 200)
         {
             return ($expected === $this->context->getResponseStatus());
         }
