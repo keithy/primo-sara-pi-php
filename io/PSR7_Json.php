@@ -78,49 +78,50 @@ namespace IO {
             return $this;
         }
 
-        function respondNotFound($info)
+//
+//        function respondNotFound($info)
+//        {
+//            $this->controller->statusNotFound();
+//            return $this->respondErrors("Not Found", $info);
+//        }
+//
+//        function respondInvalidParameter($info)
+//        {
+//            $this->controller->statusInvalidParameter();
+//            $this->controller->errorInfo($info);
+//
+//            return $this->respondErrors("Invalid or Missing Parameter", $info);
+//        }
+//
+//        function respondNoData($info)
+//        {
+//            $this->controller->statusNoData();
+//
+//            $this->controller->errorInfo($info);
+//
+//            return $this->respondErrors("No Data", $info);
+//        }
+//
+//        function respondErrors($message, $info = [])
+//        {
+//            $errors = [];
+//            $info['message'] = $message;
+//
+//            $this->controller->errorInfo($info);
+//
+//            $errors['errors'] = $info;
+//
+//            return $this->respond($errors);
+//        }
+//
+//        function respond($data)
+//        {
+//            return $this->controller->respond($data);
+//        }
+
+        function setResponseStatus($code, $reason)
         {
-            $this->controller->statusNotFound();
-            return $this->respondErrors("Not Found", $info);
-        }
-
-        function respondInvalidParameter($info)
-        {
-            $this->controller->statusInvalidParameter();
-            $this->controller->errorInfo($info);
-
-            return $this->respondErrors("Invalid or Missing Parameter", $info);
-        }
-
-        function respondNoData($info)
-        {
-            $this->controller->statusNoData();
-
-            $this->controller->errorInfo($info);
-
-            return $this->respondErrors("No Data", $info);
-        }
-
-        function respondErrors($message, $info = [])
-        {
-            $errors = [];
-            $info['message'] = $message;
-
-            $this->controller->errorInfo($info);
-
-            $errors['errors'] = $info;
-
-            return $this->controller->respond($errors);
-        }
-
-        function respond($data)
-        {
-            return $this->controller->respond($data);
-        }
-
-        function setResponseStatus($code)
-        {
-            $this->response = $this->response->withStatus($code);
+            $this->response = $this->response->withStatus($code, $reason);
         }
 
         function getResponseStatus()
@@ -128,11 +129,13 @@ namespace IO {
             return $this->response->getStatusCode();
         }
 
-        function reply($data)
+        function reply($data, $type = null)
         {
-            return $this->response
-                            ->write(json_encode($data))
-                            ->withHeader('Content-Type', 'application/json');
+            $type ?? $type = $this->controller->contentType();
+            
+            return $this->response = $this->response
+                    ->withHeader('Content-Type', $type)
+                    ->write(json_encode($data));
         }
 
         function getServerRequestHeaderAt($key)
@@ -210,69 +213,81 @@ namespace IO\PSR7_Json\Roles {
 
     trait Output
     {
-        protected $ioMessage;
+        protected $errors = [];
+        protected $contentType;
 
         function outputEcho() // for debugging/echo
         {
             return $this->context->outputEcho();
         }
 
-        function respond($data)
+        function respond($reply = false)
         {
             switch (true) {
-                case (is_array($data));
-                    $reply = $data;
-                    $reply['success'] ?? $reply['success'] = true;
-                case (true === $data);
+                case (true === $reply);
                     $reply = ["success" => true];
-                    break;
-                case (false === $data);
+
+                case (false === $reply);
                     $reply = ["success" => false];
-                    break;
+
+                case (is_array($reply));
+                    if (empty($this->errors)) {
+                        // $reply['success'] ?? $reply['success'] = true;
+                    } else {
+                        $reply['errors'] = $this->errors;
+                        $reply = $this->errorInfo($reply);
+                    }
             }
-            if ($this->ioMessage) {
-                $reply['message'] = $this->ioMessage;
+
+            // if there is a status field we could set it at this point
+            // if (isset($reply['status'])) $reply['status'] = $this->context->getResponseStatus();
+
+            return $this->context->reply($reply, $this->contentType);
+        }
+
+        function setStatus($code, $reason = '')
+        {
+            if (is_string($code)) {
+                if (!isset(\IO\PSR7_Json::codes[$code]))
+                        throw new \Exception("Error mnemonic not found '$code'");
+                $code = \IO\PSR7_Json::codes[$code];
             }
 
-            $reply['status'] = $this->context->getResponseStatus();
+            if (empty($this->errors)) $this->context->setResponseStatus($code, $reason);
 
-            return $this->context->reply($reply);
+            if ($reason) {
+                $this->errors[] = ['status' => $code, 'message' => $reason];
+            }
         }
 
-        function setStatus($code)
+        function setContentType($type)
         {
-            $this->context->setResponseStatus($code);
-            return $this;
+            $this->contentType = $type;
         }
 
-        function statusOK(...$args) // the slim default - so probably not needed
+        function statusOK($reason = null) // the slim default - so probably not needed
         {
-            if (!empty($args)) $this->ioMessage = sprintf(...$args);
-            $this->context->setResponseStatus(200);
+            $this->context->setResponseStatus(200, $reason);
         }
 
-        function statusNoData(...$args)
+        function statusNoData($reason = null)
         {
-            if (!empty($args)) $this->ioMessage = sprintf(...$args);
-            $this->context->setResponseStatus(204);
+            $this->setStatus(204, $reason);
         }
 
-        function statusInvalidParameter(...$args)
+        function statusInvalidParameter($reason = null)
         {
-            if (!empty($args)) $this->ioMessage = sprintf(...$args);
-            $this->context->setResponseStatus(400);
+            $this->setStatus(400, $reason);
         }
 
-        function statusNotFound(...$args)
+        function statusNotFound($reason = null)
         {
-            if (!empty($args)) $this->ioMessage = sprintf(...$args);
-            $this->context->setResponseStatus(404);
+            $this->setStatus(404, $reason);
         }
 
         function statusInvalidFile(...$args)
         {
-            if (!empty($args)) $this->ioMessage = sprintf(...$args);
-            $this->context->setResponseStatus(404);
+            $this->setStatus(404, $reason);
         }
 
         function isStatusOK($expected = 200)
