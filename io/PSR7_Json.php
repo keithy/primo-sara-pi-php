@@ -54,6 +54,7 @@ namespace IO {
         public $controller;
         public $request;
         public $response;
+        public $route;
 
         // $model
         // 
@@ -71,6 +72,7 @@ namespace IO {
             $this->controller = $controller->entering($this);
         }
 
+        // route should be an attribute of request
         function setIO($request, $response)
         {
             $this->request = $request;
@@ -102,17 +104,18 @@ namespace IO {
 //            return $this->respondErrors("No Data", $info);
 //        }
 //
-//        function respondErrors($message, $info = [])
-//        {
-//            $errors = [];
-//            $info['message'] = $message;
-//
-//            $this->controller->errorInfo($info);
-//
-//            $errors['errors'] = $info;
-//
-//            return $this->respond($errors);
-//        }
+        function respondErrors($code, $message)
+        {
+            $this->setResponseStatus($code, $message);
+
+            $info['message'] = $message;
+            $info['status'] = $code;
+
+            $this->reply(function() use( $info ) {
+                return json_encode(['errors' => $this->controller->errorInfo($info)]);
+            });
+        }
+
 //
 //        function respond($data)
 //        {
@@ -129,13 +132,15 @@ namespace IO {
             return $this->response->getStatusCode();
         }
 
-        function reply($data, $type = null)
+        function reply(\Closure $fn, $type = null)
         {
             $type ?? $type = $this->controller->contentType();
-            
-            return $this->response = $this->response
-                    ->withHeader('Content-Type', $type)
-                    ->write(json_encode($data));
+
+            $this->response = $this->response->withHeader('Content-Type', $type);
+
+            $this->response = $this->response->write($fn());
+
+            return $this->response;
         }
 
         function getServerRequestHeaderAt($key)
@@ -155,15 +160,20 @@ namespace IO {
 
         function inputEcho()
         {
-            return ["request_attributes" => $this->request->getAttributes(),
-                "request_params" => $this->request->getParams(),
-                "query_params" => $this->request->getQueryParams()
+            return [
+                //"request_attributes" => $this->request->getAttributes(),
+                "route" => $this->request->getAttribute('route'),
+                "type" => $this->request->getHeader('Content-Type')[0],
+                "query_params" => json_encode($this->request->getQueryParams()),
+                "form_params" => json_encode($this->request->getParsedBody())
             ];
         }
 
         function outputEcho()
         {
-            return [];
+            return [
+                "type" => $this->response->getHeader('Content-Type')[0],
+            ];
         }
     }
 
@@ -224,12 +234,13 @@ namespace IO\PSR7_Json\Roles {
         function respond($reply = false)
         {
             switch (true) {
+                case ($reply instanceof \Closure);
+                    return $this->context->reply($reply, $this->contentType);
+                    break;
                 case (true === $reply);
                     $reply = ["success" => true];
-
                 case (false === $reply);
                     $reply = ["success" => false];
-
                 case (is_array($reply));
                     if (empty($this->errors)) {
                         // $reply['success'] ?? $reply['success'] = true;
@@ -237,12 +248,15 @@ namespace IO\PSR7_Json\Roles {
                         $reply['errors'] = $this->errors;
                         $reply = $this->errorInfo($reply);
                     }
+                    break;
             }
 
             // if there is a status field we could set it at this point
             // if (isset($reply['status'])) $reply['status'] = $this->context->getResponseStatus();
 
-            return $this->context->reply($reply, $this->contentType);
+            return $this->context->reply(function() use ( $reply ) {
+                        return json_encode($reply);
+                    }, $this->contentType);
         }
 
         function setStatus($code, $reason = '')
@@ -285,7 +299,7 @@ namespace IO\PSR7_Json\Roles {
             $this->setStatus(404, $reason);
         }
 
-        function statusInvalidFile(...$args)
+        function statusInvalidFile($reason = null)
         {
             $this->setStatus(404, $reason);
         }
@@ -338,8 +352,7 @@ namespace IO\PSR7_Json\Roles {
             try {
                 return require($path);
             } catch (\Exception $ex) {
-                $this->statusInvalidFile();
-                $this->context->respondErrors($ex->getMessage());
+                $this->context->respondErrors(404, $ex->getMessage());
             }
         }
     }
@@ -357,8 +370,7 @@ namespace IO\PSR7_Json\Roles {
             try {
                 return require($path);
             } catch (\Exception $ex) {
-                $this->statusInvalidFile();
-                $this->context->respondErrors($ex->getMessage());
+                $this->context->respondErrors(404, $ex->getMessage());
             }
         }
     }
@@ -377,8 +389,8 @@ namespace IO\PSR7_Json\Roles {
                 return json5_decode(file_get_contents($path));
                 // json5_decode raises Exceptions on parsing problems
             } catch (\SyntaxError $ex) {
-                $this->statusInvalidFile();
-                $this->context->respondErrors($ex->getMessage());
+
+                $this->context->respondErrors(404, $ex->getMessage());
             }
         }
     }
