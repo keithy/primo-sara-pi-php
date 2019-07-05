@@ -1,85 +1,35 @@
 <?php
 
-// The Roles define framework independent mapping onto the HTTP protocol
-// The IO Context defines the interface onto the framework, e.g. 
-// e.g. PSR7 request/response or stdin/stdout/stderr or Redis
+// The IO Context defines the interface onto a framework.
+// 
+// Potential options:
+// a) PSR7 request/response (Slim3/4)
+// b) PHP $_REQUEST (no framework)
+// c) stdin/stdout/stderr
+// d) Redis/Memecached shared memory
+// e) Hadera Hashgraph protocol with trust built in.
+//
+// Roles define framework independent mapping onto a protocol
+// Roles also define protocol policies
+// e.g. Whether NoData returns 204, 404 or an empty array.
+
+// IO/PSR7_JSON - requests/responses conform to PSR7, and data returned is typically encoded in JSON.
+// 
+// The ioContext (on creation) informs the Controller that it is "entering" the context.
+// this allows the Controller to request protocol roles from the ioContext.
+// 
+// The default is to request an "Input_Basic" and "Output_Basic" role, saying in effect
+// equip me to perform IO functions "within your context", according to a Basic protocol definition.
+// 
+// The Basic Output Protocol definition is: 
+// a) Data => array, no-data => 204.  
+// b) errors reported as 'errors' => [ array of multiple errors ]
 
 namespace IO {
 
-    class PSR7_Json extends \DCI\Context
-    {
-        const codes = [
-            'ok' => 200,
-            'created' => 201,
-            'accepted' => 202,
-            'no content' => 204,
-            'reset content' => 205,
-            'moved permanently' => 301,
-            'found' => 302,
-            'see other' => 303,
-            'not modified' => 304,
-            'temporary redirect' => 307,
-            'permanent redirect' => 308,
-            'bad request' => 400,
-            'unauthorized' => 401,
-            'payment required' => 402,
-            'forbidden' => 403,
-            'not found' => 404,
-            'method not allowed' => 405,
-            'not acceptable' => 406,
-            'request timeout' => 408,
-            'conflict' => 409,
-            'gone' => 410,
-            'precondition failed' => 412,
-            'payload too large' => 413,
-            'unsupported media type' => 415,
-            "i'm a teapot" => 418,
-            'page expired' => 419,
-            'enhance your calm' => 420,
-            'unprocessable entity' => 422,
-            'locked' => 423,
-            'upgrade required' => 426,
-            'too many requests' => 429,
-            'call the lawyers' => 451,
-            'invalid token' => 498,
-            'token required' => 499,
-            'internal server error' => 500,
-            'error' => 500,
-            'not implemented' => 501,
-            'bad gateway' => 502,
-            'service unavailable' => 503,
-            'gateway timeout' => 504
-        ];
-
-        public $controller;
-        public $request;
-        public $response;
-        public $route;
-
-        // $model
-        // 
-        // A) an instance representing a data object (to be inserted or updated to the database)
-        // or
-        // B) a partial instance with the defining characteristics needed to retrieve the full object
-        //    from the database
-        // $controller
-        // 
-        // Our connection to the big wide world, who is asking 
-        // Construct
-        function __construct($controller)
-        {
-            $this->state = $controller->state;
-            $this->controller = $controller->entering($this);
-        }
-
-        // route should be an attribute of request
-        function setIO($request, $response)
-        {
-            $this->request = $request;
-            $this->response = $response;
-            return $this;
-        }
-
+    class PSR7_Json extends ContextHTTP
+    {                       
+                
 //
 //        function respondNotFound($info)
 //        {
@@ -192,7 +142,7 @@ namespace IO {
 
 namespace IO\PSR7_Json\Roles {
 
-    trait Input
+    trait Input_Basic
     {
 
         function inputEcho() // for debugging/echo
@@ -221,7 +171,7 @@ namespace IO\PSR7_Json\Roles {
         }
     }
 
-    trait Output
+    trait Output_Basic
     {
         protected $errors = [];
         protected $contentType;
@@ -309,90 +259,4 @@ namespace IO\PSR7_Json\Roles {
             return ($expected === $this->context->getResponseStatus());
         }
     }
-
-    trait ReadFile_json
-    {
-
-        function readFormat()
-        {
-            return 'json';
-        }
-
-        function readFor($path)
-        {
-            return json_decode(file_get_contents($path), true);
-        }
-    }
-
-    trait ReadFile_yml
-    {
-
-        function readFormat()
-        {
-            return 'yml';
-        }
-
-        function readFor($path)
-        {
-
-            return yaml_parse_file(a_path($path));
-        }
-    }
-
-    trait ReadFile_php
-    {
-
-        function readFormat()
-        {
-            return "php";
-        }
-
-        function readFor($path)
-        {
-            try {
-                return require($path);
-            } catch (\Exception $ex) {
-                $this->context->respondErrors(404, $ex->getMessage());
-            }
-        }
-    }
-
-    trait ReadFile_inc
-    {
-
-        function readFormat()
-        {
-            return "php";
-        }
-
-        function readFor($path)
-        {
-            try {
-                return require($path);
-            } catch (\Exception $ex) {
-                $this->context->respondErrors(404, $ex->getMessage());
-            }
-        }
-    }
-
-    trait ReadFile_json5
-    {
-
-        function readFormat()
-        {
-            return "json5";
-        }
-
-        function readFor($path)
-        {
-            try {
-                return json5_decode(file_get_contents($path));
-                // json5_decode raises Exceptions on parsing problems
-            } catch (\SyntaxError $ex) {
-
-                $this->context->respondErrors(404, $ex->getMessage());
-            }
-        }
-    }
-
 }

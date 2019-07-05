@@ -51,6 +51,7 @@
         "classmap": [
             "persistence\/",
             "io\/",
+            "system\/",
             "stage\/"
         ]
     },

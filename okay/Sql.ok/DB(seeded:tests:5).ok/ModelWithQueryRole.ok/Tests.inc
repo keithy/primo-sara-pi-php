@@ -7,7 +7,6 @@ namespace fixture {
 
 namespace ok {
 
-
     EXPECT("model created with query-role added later");
 
     $db = $PERSISTENCE->withTable('tests', 'id');
@@ -56,6 +55,23 @@ namespace ok {
     $set = $test->fetch();
 
     assert(1 == count($set));
+}
+
+namespace ok {
+
+    EXPECT("model created with query-role - fetch ids");
+
+    $db = $PERSISTENCE->withTable('tests', 'id');
+
+    $test = new \Actor\StdClass;
+    
+    $db->useAsQuery($test);
+
+    _("to be able to query Tests - by id");
+
+    $set = $test->fetchIds([1,2,3]);
+ 
+    assert(3 == count($set));
 }
 
 namespace ok {

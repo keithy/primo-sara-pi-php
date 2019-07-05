@@ -72,7 +72,7 @@ namespace Persistence {
 
         function tableFor($modelClass)
         {
-            return $this->table ?? $this->table = strtolower($modelClass::plural);
+            return $this->table ?? $this->table = strtolower($modelClass::singular);
         }
 
         function primaryKeyFor($modelClass)
@@ -134,6 +134,19 @@ namespace Persistence {
             $is = "(`" . implode('` IS ?) OR (`', array_keys($dict)) . '` IS ?)';
 
             return $this->pdo->run("DELETE FROM `{$table}` WHERE {$is}", array_values($dict));
+        }
+
+        function dbSelectIds($modelClass, $ids, $fields = null)
+        {
+            $table = $this->tableFor($modelClass);
+            $key = $this->primaryKeyFor($modelClass);
+
+            $fields ?? $fields = $this->fields;
+
+            $in = str_repeat('?,', count($ids) - 1);
+            $stmt = $this->pdo->run("SELECT {$fields} FROM `{$table}` WHERE `{$key}` IN  ({$in}?)", $ids);
+
+            return $stmt->asObjects($modelClass, $this)->fetchAll();
         }
 
         // Versatile "INSERT INTO" column => values.
@@ -266,6 +279,14 @@ namespace Persistence\Sql\Roles {
             $modelClass = get_class($model);
 
             return $this->context->dbSelectAll($modelClass, $fields);
+        }
+
+        function fetchIds($ids, $fields = null)
+        {
+            $model = $this->getDataObject();
+            $modelClass = get_class($model);
+
+            return $this->context->dbSelectIds($modelClass, $ids, $fields);
         }
 
         function delete()
