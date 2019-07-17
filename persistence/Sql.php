@@ -186,10 +186,10 @@ namespace Persistence {
 
             $is = "`" . $key . "` IS '" . $dict[$key] . "'";
 
-            k_error_log(print_r($dict, true));
-            k_error_log(print_r($prevDict, true));
+            //k_error_log(print_r($dict, true));
+            //k_error_log(print_r($prevDict, true));
             $update = array_diff_assoc($dict, $prevDict);
-            k_error_log(print_r($update, true));
+            //k_error_log(print_r($update, true));
 
             if ($update[$key] ?? false) unset($update[$key]);
 
@@ -251,7 +251,7 @@ namespace Persistence {
             return $results;
         }
 
-        function stmtFind($search = [], $like = false, $regex = false, $ids = [], $idCol = '', $fields = null, $limit = 0, $offset = 0)
+        function stmtFind($search = [], $like = false, $regex = false, $any = [], $anyCol = '', $fields = null, $limit = 0, $offset = 0)
         {
             $sqlArgs = [];
             $where = "";
@@ -277,12 +277,12 @@ namespace Persistence {
             }
 
 
-            if (!empty($ids)) {
+            if (!empty($any)) {
                 if ("" === $where) $where = "WHERE";
 
-                $in = str_repeat('?,', count($ids) - 1);
-                $where = "{$where}{$and} `{$idCol}` IN ({$in}?)";
-                $sqlArgs = array_merge($sqlArgs, $ids);
+                $in = str_repeat('?,', count($any) - 1);
+                $where = "{$where}{$and} `{$anyCol}` IN ({$in}?)";
+                $sqlArgs = array_merge($sqlArgs, $any);
                 $and = " AND";
             }
 
@@ -374,14 +374,14 @@ namespace Persistence\Sql\Roles {
 
         function dbFetchAll($fields, $limit, $offset)
         {
-            $stmt = $this->context->stmtFind($this->search, $this->like, $this->regex, $this->ids, $this->col, $fields, $limit, $offset);
+            $stmt = $this->context->stmtFind($this->search, $this->like, $this->regex, $this->any, $this->col, $fields, $limit, $offset);
 
             return $stmt->asObjects($this->context->modelClass, $this->context->marshall)->fetchAll();
         }
 
         function dbFetchCount()
         {
-            $stmt = $this->context->stmtFind($this->search, $this->like, $this->regex, $this->ids, $this->col, 'COUNT(*)');
+            $stmt = $this->context->stmtFind($this->search, $this->like, $this->regex, $this->any, $this->col, 'COUNT(*)');
 
             return $stmt->fetchColumn();
         }
