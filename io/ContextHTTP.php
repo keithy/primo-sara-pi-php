@@ -21,7 +21,7 @@
 // equip me to perform IO functions "within your context", according to a Basic protocol definition.
 // 
 // The Basic Output Protocol definition is: 
-// a) Data => array, no-data => 204.  
+// a) Data => as returned, no-data => 204.  
 // b) errors reported as 'errors' => [ array of multiple errors ]
 
 namespace IO {

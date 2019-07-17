@@ -3,33 +3,41 @@
 namespace fixture {
 
     global $PERSISTENCE;
-
-    $db = $PERSISTENCE->withTable('tests', 'id');
-
+    
     require_once __DIR__ . "/TestClass.php";
 
+    $db = $PERSISTENCE->withTableEtc('ok\TestClass', 'tests', 'id');
+    
 }
 
 namespace ok {
 
-    EXPECT("fetchAll()");
+    EXPECT("selectAll()");
 
-    _('to retrieve 5 items into instances of DCI\StdClass');
+    $db->modelClass = 'Actor\StdClass';
+    
+    _('to retrieve 5 items into instances of Actor\StdClass');
 
-    $set = $db->fetchAll();
+    $set = $db->selectAll();
 
     assert(5 == count($set), count($set));
 
     assert('Actor\StdClass' == get_class($set[0]));
+
+    _('and have 3 properties');
+
+    assert(3 == count(array_keys($set[0]->toArray())), count(array_keys($set[0]->toArray())));
 }
 
 namespace ok {
+ 
+    $db->modelClass = 'ok\TestClass';
 
-    EXPECT("fetchAll('ok\TestClass')");
+    EXPECT("selectAll()");
 
-    _('to retrieve 5 items into instances of Phianola\Woogie\OK\TestClass');
+    _('to retrieve 5 items into instances of ok\TestClass');
 
-    $set = $db->fetchAll('ok\TestClass');
+    $set = $db->selectAll();
 
     assert(5 == count($set), count($set));
 
@@ -38,13 +46,13 @@ namespace ok {
 
 namespace ok {
 
-    EXPECT("fetchAll('ok\TestClass', 'name')");
+    EXPECT("selectAll('name')");
 
-    _('to retrieve 5 items into instances of Phianola\Woogie\OK\TestClass');
+    _('to retrieve 5 items into instances of ok\TestClass');
 
-    $set = $db->fetchAll('ok\TestClass', 'name');
+    $set = $db->selectAll('name', 2, 2);
 
-    assert(5 == count($set), count($set));
+    assert(2 == count($set), count($set));
 
     assert('ok\TestClass' == get_class($set[0]));
 
@@ -52,4 +60,3 @@ namespace ok {
 
     assert(1 == count(array_keys($set[0]->toArray())), count(array_keys((array) $set[0])));
 }
-

@@ -12,7 +12,6 @@
 // Roles define framework independent mapping onto a protocol
 // Roles also define protocol policies
 // e.g. Whether NoData returns 204, 404 or an empty array.
-
 // IO/PSR7_JSON - requests/responses conform to PSR7, and data returned is typically encoded in JSON.
 // 
 // The ioContext (on creation) informs the Controller that it is "entering" the context.
@@ -28,8 +27,8 @@
 namespace IO {
 
     class PSR7_Json extends ContextHTTP
-    {                       
-                
+    {
+
 //
 //        function respondNotFound($info)
 //        {
@@ -98,9 +97,9 @@ namespace IO {
             return $this->request->getHeaderLine($key) ?: null;
         }
 
-        function getResourceQueryParam($key)
+        function getQueryParam($key, $default)
         {
-            return $this->request->getQueryParam($key, null);
+            return ($this->request->getQueryParams()[$key]) ?? $default;
         }
 
         function getPostedParams()
@@ -124,6 +123,11 @@ namespace IO {
             return [
                 "type" => $this->response->getHeader('Content-Type')[0],
             ];
+        }
+
+        function getBody()
+        {
+            return $this->request->getBody();
         }
     }
 
@@ -160,14 +164,49 @@ namespace IO\PSR7_Json\Roles {
             return $this->context->getServerRequestHeaderAt($key);
         }
 
-        function getResourceQueryParam($key)
+        function getQueryParam($key, $default)
         {
-            return $this->context->getServerRequestHeaderAt($key);
+            return $this->context->getQueryParam($key, $default);
+        }
+
+        function getQueryParams()
+        {
+            return $this->context->getQueryParams();
         }
 
         function getParams()
         {
             return $this->context->getPostedParams();
+        }
+
+        function paramAt($key, $default = null)
+        {
+            return ($this->context->getPostedParams())[$key] ?? $default;
+        }
+
+        function getDataAsArray()
+        {
+            return json_decode($this->context->getBody(), true);
+        }
+
+        function getDataAsObject()
+        {
+            return json_decode($this->context->getBody());
+        }
+
+        function getDataAsObjectClass($className)
+        {   // total hack - for a simple become
+            return unserialize(sprintf(
+                            'O:%d:"%s"%s',
+                            \strlen($className),
+                            $className,
+                            strstr(strstr(serialize(json_decode($this->context->getBody())), '"'), ':')
+            ));
+        }
+
+        function getForm()
+        {
+            return json_decode($this->context->getBody(), true);
         }
     }
 
@@ -184,32 +223,32 @@ namespace IO\PSR7_Json\Roles {
         function respond($reply = false)
         {
             switch (true) {
+                // delayed reply & closure supplies encoding
                 case ($reply instanceof \Closure);
                     return $this->context->reply($reply, $this->contentType);
                     break;
                 case (true === $reply);
-                    $reply = ["success" => true];
+                // true and false are direct return values
                 case (false === $reply);
-                    $reply = ["success" => false];
+                // true and false are direct return values
                 case (is_array($reply));
                     if (empty($this->errors)) {
                         // $reply['success'] ?? $reply['success'] = true;
                     } else {
+                        $reply['status'] = $this->errors[0]['status'];
                         $reply['errors'] = $this->errors;
                         $reply = $this->errorInfo($reply);
                     }
                     break;
             }
 
-            // if there is a status field we could set it at this point
-            // if (isset($reply['status'])) $reply['status'] = $this->context->getResponseStatus();
-
+            // delayed reply & supply encoding
             return $this->context->reply(function() use ( $reply ) {
                         return json_encode($reply);
                     }, $this->contentType);
         }
 
-        function setStatus($code, $reason = '')
+        function setStatus($code, $reason = '', $report = [])
         {
             if (is_string($code)) {
                 if (!isset(\IO\PSR7_Json::codes[$code]))
@@ -220,7 +259,7 @@ namespace IO\PSR7_Json\Roles {
             if (empty($this->errors)) $this->context->setResponseStatus($code, $reason);
 
             if ($reason) {
-                $this->errors[] = ['status' => $code, 'message' => $reason];
+                $this->errors[] = array_merge(['status' => $code, 'message' => $reason], $report);
             }
         }
 
@@ -234,24 +273,24 @@ namespace IO\PSR7_Json\Roles {
             $this->context->setResponseStatus(200, $reason);
         }
 
-        function statusNoData($reason = null)
+        function statusNoData($reason = null, $report = [])
         {
-            $this->setStatus(204, $reason);
+            $this->setStatus(204, $reason, $report);
         }
 
-        function statusInvalidParameter($reason = null)
+        function statusInvalidParameter($reason = null, $report = [])
         {
-            $this->setStatus(400, $reason);
+            $this->setStatus(400, $reason, $report);
         }
 
-        function statusNotFound($reason = null)
+        function statusNotFound($reason = null, $report = [])
         {
-            $this->setStatus(404, $reason);
+            $this->setStatus(404, $reason, $report);
         }
 
-        function statusInvalidFile($reason = null)
+        function statusInvalidFile($reason = null, $report = [])
         {
-            $this->setStatus(404, $reason);
+            $this->setStatus(404, $reason, $report);
         }
 
         function isStatusOK($expected = 200)
@@ -259,4 +298,5 @@ namespace IO\PSR7_Json\Roles {
             return ($expected === $this->context->getResponseStatus());
         }
     }
+
 }

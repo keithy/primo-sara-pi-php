@@ -10,11 +10,9 @@ namespace System {
 
     class Unix extends \DCI\Context
     {
-        public $controller;
- 
         function __construct($controller)
         {
-            $this->controller = $controller->context_system($this);
+            $controller->context_system($this);
         }
     }
 }
@@ -31,7 +29,7 @@ namespace System {
  */
 
 namespace System\Unix\Roles {
- 
+
     trait ReadFile_json
     {
 
@@ -119,4 +117,5 @@ namespace System\Unix\Roles {
             //}
         }
     }
+
 }
