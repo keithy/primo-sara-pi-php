@@ -14,15 +14,15 @@ namespace ok {
 
     EXPECT("selectAll()");
 
-    $db->modelClass = 'Actor\StdClass';
+    $db->modelClass = 'Actors\StdClass';
     
-    _('to retrieve 5 items into instances of Actor\StdClass');
+    _('to retrieve 5 items into instances of Actors\StdClass');
 
     $set = $db->selectAll();
 
     assert(5 == count($set), count($set));
 
-    assert('Actor\StdClass' == get_class($set[0]));
+    assert('Actors\StdClass' == get_class($set[0]));
 
     _('and have only 2 properties {id, name}');
 

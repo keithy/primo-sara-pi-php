@@ -24,7 +24,7 @@
 // a) Data => as returned, no-data => 204.  
 // b) errors reported as 'errors' => [ array of multiple errors ]
 
-namespace IO {
+namespace Stage {
 
     class ContextHTTP extends \DCI\Context
     {
@@ -71,15 +71,31 @@ namespace IO {
             'gateway timeout' => 504
         ];
 
-        public $controller;
+        public $director;
         public $request;
         public $response;
 
-        function __construct($controller)
+        function __construct($director, $actor = null)
         {
-            $this->controller = $controller->context_io($this);
+            $this->empowerAsDirector( $director );
+            $this->empowerAsActor( $actor ?? $director );
         }
 
+        function empowerAsDirector( $player )
+        {
+              $this->director = $player->addRole('Request_Input', $this);
+        }
+        
+        function empowerAsActor( $player )
+        {
+              $player->addRole('Response_Speak', $this);
+        }
+
+        function empowerAsAudience( $player )
+        {
+              $player->addRole('Response_Listen', $this);
+        }
+        
         function setIO($request, $response)
         {
             $this->request = $request;
@@ -87,4 +103,5 @@ namespace IO {
             return $this;
         }
     }
+
 }

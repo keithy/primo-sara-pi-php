@@ -24,35 +24,11 @@
 // a) Data => array, no-data => 204.  
 // b) errors reported as 'errors' => [ array of multiple errors ]
 
-namespace IO {
+namespace Stage {
 
     class PSR7_Json extends ContextHTTP
     {
-
-//
-//        function respondNotFound($info)
-//        {
-//            $this->controller->statusNotFound();
-//            return $this->respondErrors("Not Found", $info);
-//        }
-//
-//        function respondInvalidParameter($info)
-//        {
-//            $this->controller->statusInvalidParameter();
-//            $this->controller->errorInfo($info);
-//
-//            return $this->respondErrors("Invalid or Missing Parameter", $info);
-//        }
-//
-//        function respondNoData($info)
-//        {
-//            $this->controller->statusNoData();
-//
-//            $this->controller->errorInfo($info);
-//
-//            return $this->respondErrors("No Data", $info);
-//        }
-//
+                
         function respondErrors($code, $message)
         {
             $this->setResponseStatus($code, $message);
@@ -61,15 +37,9 @@ namespace IO {
             $info['status'] = $code;
 
             $this->reply(function() use( $info ) {
-                return json_encode(['errors' => $this->controller->errorInfo($info)]);
+                return json_encode(['errors' => $this->director->errorInfo($info)]);
             });
         }
-
-//
-//        function respond($data)
-//        {
-//            return $this->controller->respond($data);
-//        }
 
         function setResponseStatus($code, $reason)
         {
@@ -83,13 +53,13 @@ namespace IO {
 
         function reply(\Closure $fn, $type = null)
         {
-            $type ?? $type = $this->controller->contentType();
+            $type ?? $type = $this->director->contentType();
 
             $this->response = $this->response->withHeader('Content-Type', $type);
 
-            $this->response = $this->response->write($fn());
+            $this->response = $this->response->write($payload = $fn());
 
-            return $this->response;
+            return $payload;
         }
 
         function getServerRequestHeaderAt($key)
@@ -144,9 +114,9 @@ namespace IO {
  * but that programmer needn't be aware of that.)
  */
 
-namespace IO\PSR7_Json\Roles {
+namespace Stage\PSR7_Json\Roles {
 
-    trait Input_Basic
+    trait Request_Input
     {
 
         function inputEcho() // for debugging/echo
@@ -210,9 +180,10 @@ namespace IO\PSR7_Json\Roles {
         }
     }
 
-    trait Output_Basic
+    trait Response_Speak
     {
         protected $errors = [];
+        protected $successMessage;
         protected $contentType;
 
         function outputEcho() // for debugging/echo
@@ -228,12 +199,14 @@ namespace IO\PSR7_Json\Roles {
                     return $this->context->reply($reply, $this->contentType);
                     break;
                 case (true === $reply);
-                // true and false are direct return values
+                    // true and false are direct return values
+                    $reply = [];
                 case (false === $reply);
-                // true and false are direct return values
+                    // true and false are direct return values
+                    $reply = [];
                 case (is_array($reply));
                     if (empty($this->errors)) {
-                        // $reply['success'] ?? $reply['success'] = true;
+                        $reply['success'] ?? $reply['success'] = $this->successMessage;
                     } else {
                         $reply['status'] = $this->errors[0]['status'];
                         $reply['errors'] = $this->errors;
@@ -243,9 +216,11 @@ namespace IO\PSR7_Json\Roles {
             }
 
             // delayed reply & supply encoding
-            return $this->context->reply(function() use ( $reply ) {
-                        return json_encode($reply);
-                    }, $this->contentType);
+            $this->context->reply(function() use ( $reply ) {
+                return json_encode($reply);
+            }, $this->contentType);
+
+            return $reply;
         }
 
         function setStatus($code, $reason = '', $report = [])
@@ -261,6 +236,7 @@ namespace IO\PSR7_Json\Roles {
             if ($reason) {
                 $this->errors[] = array_merge(['status' => $code, 'message' => $reason], $report);
             }
+            return $this;
         }
 
         function setContentType($type)
@@ -268,29 +244,36 @@ namespace IO\PSR7_Json\Roles {
             $this->contentType = $type;
         }
 
-        function statusOK($reason = null) // the slim default - so probably not needed
+        function statusSuccess($reason = null) // the slim default - so probably not needed
         {
+            $this->successMessage = $reason;
             $this->context->setResponseStatus(200, $reason);
+            return $this;
         }
 
         function statusNoData($reason = null, $report = [])
         {
-            $this->setStatus(204, $reason, $report);
+            return $this->setStatus(204, $reason, $report);
         }
 
         function statusInvalidParameter($reason = null, $report = [])
         {
-            $this->setStatus(400, $reason, $report);
+            return $this->setStatus(400, $reason, $report);
+        }
+
+        function statusError($reason = null, $report = [])
+        {
+            return $this->setStatus(200, $reason, $report);
         }
 
         function statusNotFound($reason = null, $report = [])
         {
-            $this->setStatus(404, $reason, $report);
+            return $this->setStatus(404, $reason, $report);
         }
 
         function statusInvalidFile($reason = null, $report = [])
         {
-            $this->setStatus(404, $reason, $report);
+            return $this->setStatus(404, $reason, $report);
         }
 
         function isStatusOK($expected = 200)
@@ -299,4 +282,8 @@ namespace IO\PSR7_Json\Roles {
         }
     }
 
+    trait Response_Listen
+    {
+        
+    }
 }

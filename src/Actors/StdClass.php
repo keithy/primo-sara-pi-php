@@ -1,6 +1,6 @@
 <?php
 
-namespace Actor;
+namespace Actors;
 
 class StdClass implements \DCI\RolePlayerInterface {
    

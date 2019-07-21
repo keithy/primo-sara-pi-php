@@ -2,6 +2,6 @@
 
 namespace ok;
 
-class TestClass extends \Actor\StdClass {
+class TestClass extends \Actors\StdClass {
   
 }

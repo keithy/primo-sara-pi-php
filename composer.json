@@ -1,13 +1,13 @@
 {
-    "name": "primo\/pisara",
+    "name": "primo\/sara",
     "type": "library",
-    "description": "Persistence I\/O Stage Actors Roles => Architecture",
+    "description": "Stage Actors Roles Architecture - Persistence I\/O",
     "keywords": [
         "pdo",
         "psr7",
         "architecture"
     ],
-    "homepage": "https:\/\/github.com\/keithy\/primo-pisara-php",
+    "homepage": "https:\/\/github.com\/keithy\/primo-sara-pi-php",
     "license": "MIT",
     "authors": [
         {
@@ -46,13 +46,14 @@
     "autoload": {
         "psr-4": {
             "Persistence\\": "src\/Persistence",
-            "Actor\\": "src\/Actor"
+            "Actors\\": "src\/Actors",
+            "Play\\": "src\/Play"
         },
         "classmap": [
-            "persistence\/",
-            "io\/",
             "system\/",
-            "stage\/"
+            "stage\/",
+            "persistence\/",
+            "play\/"
         ]
     },
     "autoload-dev": {},

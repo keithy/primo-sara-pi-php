@@ -23,7 +23,6 @@ namespace Persistence {
         // Our connection to the big wide world, who is asking 
 
         protected $pdo;
-        protected $infoCache; // a persisted cache
         public $modelClass;
         public $table;
         public $key;
@@ -31,10 +30,9 @@ namespace Persistence {
         public $marshall;
 
         // Construct context - allocating a PDO connection
-        function __construct($pdo, $optionalInfoCache = null)
+        function __construct($pdo)
         {
             $this->pdo = $pdo;
-            $this->infoCache = $optionalInfoCache ?? $this; // optional
         }
 
         // Context definition - allocating a modelClass, table, primary key, and fields subset
@@ -219,10 +217,7 @@ namespace Persistence {
 
         function columns()
         {
-            return $this->infoCache->at("{$this->table}_columns",
-                            function( ) {
-                        return $this->pdo->columnsOfTable($this->table);
-                    });
+            return $this->pdo->columnsOfTable($this->table);
         }
 
         // fallback when no infoCache provider is supplied

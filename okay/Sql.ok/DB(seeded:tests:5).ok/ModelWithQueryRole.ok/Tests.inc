@@ -4,14 +4,14 @@ namespace fixture {
 
     global $PERSISTENCE;
 
-    $db = $PERSISTENCE->withTableEtc('Actor\StdClass', 'tests', 'id');
+    $db = $PERSISTENCE->withTableEtc('Actors\StdClass', 'tests', 'id');
 }
 
 namespace ok {
 
     EXPECT("model created with query-role added later");
 
-    $test = new \Actor\StdClass;
+    $test = new \Actors\StdClass;
     $test->id = 1;
 
     $db->useAsQuery($test);
@@ -27,7 +27,7 @@ namespace ok {
 
     EXPECT("model created with query-role added initially");
 
-    $test = $db->useAsQuery(new \Actor\StdClass);
+    $test = $db->useAsQuery(new \Actors\StdClass);
 
     $test->id = 1;
 
@@ -46,7 +46,7 @@ namespace ok {
 
     _("to create query model of class provided by the context");
 
-    assert('Actor\StdClass' == get_class($test));
+    assert('Actors\StdClass' == get_class($test));
 
     _("to be able to query Tests - by id");
 
@@ -60,7 +60,7 @@ namespace ok {
 
     EXPECT("model created with query-role - fetch ids");
 
-    $test = new \Actor\StdClass;
+    $test = new \Actors\StdClass;
 
     $db->useAsQuery($test);
 
@@ -95,7 +95,7 @@ namespace ok {
 
     EXPECT("to be able to fetch all Tests");
 
-    $test = new \Actor\StdClass;
+    $test = new \Actors\StdClass;
 
     $set = $db->useAsQuery($test)->dbFetchAll();
 
